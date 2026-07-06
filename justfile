@@ -10,17 +10,25 @@ dev:
 test:
     bun run test
 
-# Type-check + svelte-check
+# All static analysis: wrangler types + svelte-check + prettier (read-only)
 check:
-    bun run check
+    bun run check && bun run lint
+
+fmt:
+    bun run format
 
 build:
     bun run build
+
+# Stream logs from the deployed Worker
+logs:
+    bunx wrangler tail
 
 # Push .env.tpl secrets to the Worker (no plaintext touches disk)
 sync-secrets:
     op inject -i .env.tpl | grep -v '^#' | grep . | while IFS='=' read -r k v; do echo -n "$v" | bunx wrangler secret put "$k"; done
 
-# Build + deploy to Cloudflare
 deploy: test build
     bunx wrangler deploy
+
+# --- project-specific recipes below (one-offs live in scripts/, run directly) ---

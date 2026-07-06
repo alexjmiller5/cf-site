@@ -37,11 +37,16 @@ options live in `vite.config.ts` inside the `sveltekit()` plugin.
 
 ## Commands
 
+Standard verb set (see global CLAUDE.md) — the justfile is the interface,
+not a script catalog; one-offs go in `scripts/` and run directly.
+
 | Command | Purpose |
 |---|---|
 | `just dev` | Dev server (secrets injected via op) |
 | `just test` | vitest |
-| `just check` | wrangler types + svelte-check |
+| `just check` / `just fmt` | wrangler types + svelte-check + prettier / auto-fix |
+| `just build` | Production build |
+| `just logs` | `wrangler tail` on the deployed Worker |
 | `just sync-secrets` | Push `.env.tpl` → Worker secrets |
 | `just deploy` | test + build + `wrangler deploy` |
 
