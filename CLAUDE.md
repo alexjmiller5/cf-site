@@ -62,5 +62,5 @@ tests exist.
 2. Fill `@theme` tokens in `src/routes/layout.css`.
 3. Fill `.env.tpl` if the site needs secrets; `just sync-secrets`.
 4. Custom domain / D1 / R2: add to `wrangler.jsonc`, then `bun run gen`.
-5. CI: `gh secret set OP_SERVICE_ACCOUNT_TOKEN --body "$(op read 'op://Personal/op-service-account-personal-infra/token')"`.
+5. CI: `gh secret set OP_SERVICE_ACCOUNT_TOKEN --body "$(op read 'op://Personal/<project>-ci SA Token/token')"`.
 6. If private: enable Cloudflare Access on the domain (document the click-ops in README).
