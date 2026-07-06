@@ -26,7 +26,7 @@ logs:
 
 # Push .env.tpl secrets to the Worker (no plaintext touches disk)
 sync-secrets:
-    op inject -i .env.tpl | grep -v '^#' | grep . | while IFS='=' read -r k v; do echo -n "$v" | bunx wrangler secret put "$k"; done
+    ./scripts/sync-secrets.sh
 
 deploy: test build
     bunx wrangler deploy
