@@ -18,9 +18,14 @@ template for every site, dashboard, and site-attached backend.
 - Scheduled work attached to this site → [`triggers.crons`](https://developers.cloudflare.com/workers/configuration/cron-triggers/)
   in wrangler.jsonc (free) — though Modal cron is the house default for
   standalone jobs.
-- Private site? Put Cloudflare Access in front (Google SSO for browsers,
-  Service Tokens for machine callers). Never roll custom auth for
-  personal-only apps.
+- Private site? Put Cloudflare Access in front (login via the Cloudflare
+  identity provider — sign in with the Cloudflare account, the zero-setup
+  default IdP; session duration 1 month; Service Tokens for machine
+  callers). Never roll custom auth for personal-only apps.
+  - If it's also a homescreen PWA: manifest + apple-touch-icon are fetched
+    WITHOUT cookies — see the personal-infra skill's PWA-behind-Access
+    pattern (manifest `crossorigin="use-credentials"` + a Bypass Access app
+    for the asset paths), or the icon degrades to a letter monogram.
 
 ## Stack
 
