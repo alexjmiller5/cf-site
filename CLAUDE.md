@@ -29,16 +29,27 @@ template for every site, dashboard, and site-attached backend.
 
 ## Stack
 
-Bun (never npm) · SvelteKit + Svelte 5 runes · Tailwind v4 · vitest ·
-prettier. Config note: there is no `svelte.config.js` — adapter and compiler
+Bun (never npm) · SvelteKit + Svelte 5 runes · Tailwind v4 ·
+shadcn-svelte (+ bits-ui) · vitest · prettier. Config note: there is no `svelte.config.js` — adapter and compiler
 options live in `vite.config.ts` inside the `sveltekit()` plugin.
 
 ## UI conventions
 
+- **Components: shadcn-svelte** (styled copy-paste over the Bits UI headless
+  layer). The core set lives in `src/lib/components/ui/` — that code is OURS:
+  edit it freely, restyle it, never treat it as a vendored dependency. Add
+  more with `bunx shadcn-svelte@latest add <component>` (config in
+  `components.json`; zinc base, `nova` style). Behavior/a11y fixes arrive via
+  `bun update bits-ui` — the styling layer never auto-updates.
 - ALL design tokens (colors, fonts, spacing, radii) go in the `@theme` block
   in `src/routes/layout.css`. Components consume tokens, never raw values.
-- Icons: heroicons.com ONLY — never emojis or generic unicode. Reference
-  clone at `~/Desktop/coding/reference-repos/heroicons`.
+  shadcn-svelte's semantic tokens (`--primary`, `--radius`, …) are defined in
+  the `:root`/`.dark` blocks there — retheme a project by editing those, not
+  the component files.
+- Icons: heroicons.com ONLY for app-level icons — never emojis or generic
+  unicode. Reference clone at `~/Desktop/coding/reference-repos/heroicons`.
+  (Exception: shadcn-svelte components internally use `@lucide/svelte` for
+  their built-in chrome — chevrons, checks — leave those alone.)
 
 ## Commands
 
@@ -64,7 +75,8 @@ tests exist.
 ## New-project checklist (delete this section after setup)
 
 1. Rename `name` in `wrangler.jsonc` and `package.json`.
-2. Fill `@theme` tokens in `src/routes/layout.css`.
+2. Fill `@theme` tokens in `src/routes/layout.css`; adjust the shadcn-svelte
+   `:root`/`.dark` variables there if the project needs its own palette.
 3. Fill `.env.tpl` if the site needs secrets; `just sync-secrets`.
 4. Custom domain / D1 / R2: add to `wrangler.jsonc`, then `bun run gen`.
 5. CI: `gh secret set OP_SERVICE_ACCOUNT_TOKEN --body "$(op read 'op://Personal/<project>-ci SA Token/token')"`.
