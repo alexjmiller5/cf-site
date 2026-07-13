@@ -15,6 +15,14 @@ template for every site, dashboard, and site-attached backend.
 - Bindings (D1, R2, KV, cron triggers) are declared in `wrangler.jsonc` —
   that file IS the IaC. Access them via `platform.env` (typed in
   `worker-configuration.d.ts`; regenerate with `bun run gen`).
+- **Zone/edge config that wrangler DOESN'T manage — HSTS, WAF/rate-limit
+  rules, DNS records, Access policies — is declarative-via-SCRIPTS, never
+  Terraform.** When a site needs one, add an idempotent `scripts/cf-*.py`
+  (reads the CF API token + zone id from 1Password, PUT/PATCHes the setting)
+  plus a `just cf-*` recipe. The script IS the declarative source of truth —
+  the intended settings read straight off it. Terraform is overkill for
+  Cloudflare and drags back state files. Don't scaffold this until a site
+  actually needs it. (See the `personal-infra` skill.)
 - Scheduled work attached to this site → [`triggers.crons`](https://developers.cloudflare.com/workers/configuration/cron-triggers/)
   in wrangler.jsonc (free) — though Modal cron is the house default for
   standalone jobs.
