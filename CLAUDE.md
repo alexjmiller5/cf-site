@@ -46,10 +46,10 @@ options live in `vite.config.ts` inside the `sveltekit()` plugin.
   shadcn-svelte's semantic tokens (`--primary`, `--radius`, …) are defined in
   the `:root`/`.dark` blocks there — retheme a project by editing those, not
   the component files.
-- Icons: heroicons.com ONLY for app-level icons — never emojis or generic
-  unicode. Reference clone at `~/Desktop/coding/reference-repos/heroicons`.
-  (Exception: shadcn-svelte components internally use `@lucide/svelte` for
-  their built-in chrome — chevrons, checks — leave those alone.)
+- Icons: Lucide ONLY, via `@lucide/svelte` (already a dependency; browse at
+  lucide.dev) — never emojis or generic unicode. Import as components:
+  `import { ChevronRight } from '@lucide/svelte'`. Same set the shadcn-svelte
+  components use internally, so the whole UI shares one icon language.
 
 ## Commands
 
