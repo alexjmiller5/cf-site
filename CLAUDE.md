@@ -72,7 +72,14 @@ not a script catalog; one-offs go in `scripts/` and run directly.
 | `just build` | Production build |
 | `just logs` | `wrangler tail` on the deployed Worker |
 | `just sync-secrets` | Push `.env.tpl` → Worker secrets |
-| `just deploy` | test + build + `wrangler deploy` |
+| `just deploy` | test + build + `wrangler deploy` — CI's job, not yours (below) |
+
+**Deploying = commit + push to `main`.** The GHA deploy workflow runs tests,
+syncs secrets, and deploys — never run `just deploy` locally unless there's a
+legitimate stated reason (e.g. CI itself is broken): local deploys ship code
+that isn't in git, and the next push silently reverts it. After pushing,
+verify the run with the gh CLI (`gh run watch <id> --exit-status`; on failure
+`gh run view <id> --log-failed`) — never assume the deploy succeeded.
 
 ## TDD
 
@@ -87,5 +94,13 @@ tests exist.
    `:root`/`.dark` variables there if the project needs its own palette.
 3. Fill `.env.tpl` if the site needs secrets; `just sync-secrets`.
 4. Custom domain / D1 / R2: add to `wrangler.jsonc`, then `bun run gen`.
-5. CI: `gh secret set OP_SERVICE_ACCOUNT_TOKEN --body "$(op read 'op://Personal/<project>-ci SA Token/token')"`.
+5. Vault + CI: Alex runs `op-project-bootstrap .env.tpl --repo <owner/name>` — creates the project vault, the `<Project> ENV` item, the read-only CI SA, and sets the repo's `OP_SERVICE_ACCOUNT_TOKEN`.
 6. If private: enable Cloudflare Access on the domain (document the click-ops in README).
+
+## Not Alex? Owner-specific assumptions
+
+The code is generic; the workflow assumes Alex's setup. If you forked this:
+secrets flow through 1Password (`.env.tpl` with `op://` references,
+`op-project-bootstrap` is his private bootstrap script) — swap in your own
+secret store or plain `wrangler secret put`; Cloudflare auth is just
+`wrangler login` on your account.
