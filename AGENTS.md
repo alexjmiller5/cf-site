@@ -1,4 +1,4 @@
-# CLAUDE.md
+# AGENTS.md
 
 Website on Cloudflare Workers with static assets: Svelte 5 frontend +
 optional thin co-located API (server routes → the same Worker). This is the
@@ -61,7 +61,7 @@ options live in `vite.config.ts` inside the `sveltekit()` plugin.
 
 ## Commands
 
-Standard verb set (see global CLAUDE.md) — the justfile is the interface,
+Standard verb set (see global AGENTS.md) — the justfile is the interface,
 not a script catalog; one-offs go in `scripts/` and run directly.
 
 | Command | Purpose |
