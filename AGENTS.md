@@ -54,10 +54,12 @@ options live in `vite.config.ts` inside the `sveltekit()` plugin.
   shadcn-svelte's semantic tokens (`--primary`, `--radius`, …) are defined in
   the `:root`/`.dark` blocks there — retheme a project by editing those, not
   the component files.
-- Icons: Lucide ONLY, via `@lucide/svelte` (already a dependency; browse at
-  lucide.dev) — never emojis or generic unicode. Import as components:
-  `import { ChevronRight } from '@lucide/svelte'`. Same set the shadcn-svelte
-  components use internally, so the whole UI shares one icon language.
+- Icons: Tabler ONLY, via `@tabler/icons-svelte` (already a dependency; browse
+  at tabler.io/icons or icones.js.org) — never emojis or generic unicode.
+  Import as components: `import { IconChevronRight } from '@tabler/icons-svelte'`.
+  shadcn-svelte components render Lucide internally (`@lucide/svelte` stays a
+  dependency for that) — same 24px/2px visual language, so the UI still reads
+  as one icon set. Full standard in the global `icons` skill.
 
 ## Commands
 
