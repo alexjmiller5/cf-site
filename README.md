@@ -19,5 +19,6 @@ justfile          dev / test / check / sync-secrets / deploy
 See the `new-project` skill, or the checklist in CLAUDE.md.
 
 Manual one-time steps (cannot be codified — keep documented here):
+
 - Cloudflare Access policies (if the site is private) are configured in the
   Zero Trust dashboard
