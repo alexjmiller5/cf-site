@@ -7,6 +7,9 @@ on:
 
 jobs:
   deploy:
+    # The template repo itself has nothing to deploy (CHANGEME creds) - every
+    # push showed a red X. Scaffolded repos have a different name, so they run.
+    if: github.repository != 'alexjmiller5/cf-site'
     runs-on: ubuntu-latest
     # The one GH secret: this project's 1Password service-account token (see
     # new-project skill). It authenticates op for BOTH reading the deploy creds
