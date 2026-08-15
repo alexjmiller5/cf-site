@@ -63,9 +63,12 @@ options live in `vite.config.ts` inside the `sveltekit()` plugin.
 
 ## Site basics (SEO, titles, favicon, https)
 
-- **Every route sets `<title>` + `<meta name="description">`** in
-  `<svelte:head>` (pattern in `src/routes/+page.svelte`). Titles live on
-  pages, not the layout - a layout title duplicates when a page adds its own.
+- **Every route renders `<Seo title description [image]>`**
+  (`src/lib/components/seo.svelte`) - it emits the title, meta description,
+  Open Graph, and twitter-card tags in one place. Head basics live on pages,
+  not the layout - a layout title duplicates when a page adds its own. Give
+  `image` a 1200x630 banner path once the site has one (link unfurls in
+  iMessage/Slack/Discord depend on it).
 - **Favicon: purpose-driven, never empty, never stock.** Replace
   `src/lib/assets/favicon.svg` (keep SVG; it's wired in `+layout.svelte`)
   with an icon that depicts THIS site specifically - its subject + function
@@ -77,9 +80,26 @@ options live in `vite.config.ts` inside the `sveltekit()` plugin.
   treat it like one.
 - **`static/robots.txt`** ships allow-all; **`static/llms.txt`** describes
   the site for LLM crawlers - fill its CHANGEMEs alongside the titles.
+- **apple-touch-icon**: `static/apple-touch-icon.png` (180x180) - the same
+  purpose-driven icon rendered to PNG; iOS homescreen/share-sheet uses it.
+  Shipping the placeholder to prod is a bug, same as the favicon.
+- **theme-color** metas in `src/app.html` (light + dark) - match them to the
+  site's background tokens in `layout.css`. Dark-mode-aware favicon: embed a
+  `prefers-color-scheme` `<style>` inside the favicon SVG when its colors
+  need to flip.
+- **Error page**: `src/routes/+error.svelte` renders 404/500 with the site's
+  theme tokens - restyle it with the site, don't delete it.
 - **http → https** is a 301 in `src/hooks.server.ts` (skipped in dev) - works
-  on any domain with zero zone config. Zone-level HSTS, if a site wants it,
-  follows the `scripts/cf-*.py` convention above.
+  on any domain with zero zone config. The same hook sets baseline security
+  headers (nosniff, Referrer-Policy, Permissions-Policy); CSP stays
+  per-site. Zone-level HSTS, if a site wants it, follows the
+  `scripts/cf-*.py` convention above.
+- **Sitemap**: content sites fill the routes list in
+  `src/routes/sitemap.xml/+server.ts` and uncomment the Sitemap line in
+  robots.txt; dashboards/personal tools delete that route dir instead.
+- **Analytics: never baked in.** It's a per-site choice (CF Web Analytics,
+  PostHog, none) - offer options with tradeoffs when a site actually wants
+  measurement; don't preinstall any vendor's script.
 
 ## Form abuse ladder
 
@@ -91,17 +111,23 @@ holds (pattern proven on WTW - its historical bot spam died at level 3):
    caps email-relay/D1 abuse. Free, no zone config.
 3. **Semantic validation** - server-side checks only a human passes (known
    event names, ASCII folding, field plausibility).
-4. **Cloudflare Turnstile (managed mode)** - not baked into this template.
-   When scaffolding a site with a public form, OFFER it to Alex and lay out
+4. **Cloudflare Turnstile (managed mode)** - the canonical implementation
+   SHIPS in this template; never hand-roll a variant. The pieces:
+   `src/lib/components/turnstile.svelte` (widget, dummy always-pass sitekey
+   by default so dev/test needs no registration),
+   `src/lib/server/turnstile.ts` (+ spec) for the form-action verify, and
+   `scripts/cf-turnstile.py` (idempotent widget provisioner; secret →
+   `TURNSTILE_SECRET_KEY` in the project's 1P ENV item, sitekey →
+   `PUBLIC_TURNSTILE_SITE_KEY`).
+   When scaffolding a site with a public form, OFFER Turnstile to Alex with
    the tradeoffs for THIS site: what the form triggers (email relay, D1
-   writes, paid APIs, reputational spam) and how costly/abusable that is,
-   versus what Turnstile costs here - a per-hostname widget registration
-   (account-level, not wrangler - needs a `scripts/cf-turnstile.py`
-   provisioner), a secret per site, a third-party script, and a nonzero
-   real-human block rate. Lean toward levels 1-3 alone for low-stakes forms;
-   lean toward adding Turnstile when side effects are expensive or abuse is
-   expected. Dev/test uses Cloudflare's dummy keys, so no widget needed
-   locally.
+   writes, paid APIs, reputational spam) versus its costs - a per-hostname
+   widget registration, a secret per site, a third-party script, and a
+   nonzero real-human block rate. Lean toward levels 1-3 alone for
+   low-stakes forms; toward Turnstile when side effects are expensive or
+   abuse is expected. **Declined or no public form → delete the three
+   turnstile files (+ spec)**; adopted → wire the shipped pieces, never new
+   ones.
 
 ## Commands
 
@@ -136,13 +162,18 @@ tests exist.
 1. Rename `name` in `wrangler.jsonc` and `package.json`.
 2. Fill `@theme` tokens in `src/routes/layout.css`; adjust the shadcn-svelte
    `:root`/`.dark` variables there if the project needs its own palette.
-3. Site basics: page `<title>`/description CHANGEMEs, `static/llms.txt`,
-   and a purpose-driven favicon (see "Site basics" above - compose one for
-   this site; never ship the template default).
-4. Fill `.env.tpl` if the site needs secrets; `just sync-secrets`.
-5. Custom domain / D1 / R2: add to `wrangler.jsonc`, then `bun run gen`.
-6. Vault + CI: Alex runs `op-project-bootstrap .env.tpl --repo <owner/name>` — creates the project vault, the `<Project> ENV` item, the read-only CI SA, and sets the repo's `OP_SERVICE_ACCOUNT_TOKEN`.
-7. If private: enable Cloudflare Access on the domain (document the click-ops in README).
+3. Site basics: `<Seo>` title/description CHANGEMEs, `static/llms.txt`,
+   theme-color metas in `app.html`, and purpose-driven icons - favicon.svg
+   AND apple-touch-icon.png (compose for this site; never ship the template
+   defaults). Restyle `+error.svelte` with the theme.
+4. Forms: run the abuse ladder; offer Turnstile with this site's tradeoffs -
+   keep + wire the shipped turnstile files if adopted, delete them if not.
+5. Sitemap: content site → fill routes + uncomment robots.txt line;
+   dashboard → delete `src/routes/sitemap.xml/`.
+6. Fill `.env.tpl` if the site needs secrets; `just sync-secrets`.
+7. Custom domain / D1 / R2: add to `wrangler.jsonc`, then `bun run gen`.
+8. Vault + CI: Alex runs `op-project-bootstrap .env.tpl --repo <owner/name>` — creates the project vault, the `<Project> ENV` item, the read-only CI SA, and sets the repo's `OP_SERVICE_ACCOUNT_TOKEN`.
+9. If private: enable Cloudflare Access on the domain (document the click-ops in README).
 
 ## Hardcoded owner assumptions
 

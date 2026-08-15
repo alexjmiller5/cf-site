@@ -8,5 +8,11 @@ export const handle: Handle = async ({ event, resolve }) => {
 	if (!dev && url.protocol === 'http:') {
 		redirect(301, `https://${url.host}${url.pathname}${url.search}`);
 	}
-	return resolve(event);
+	const response = await resolve(event);
+	// Baseline security headers on server-rendered responses (static assets
+	// bypass the Worker). CSP stays a per-site decision.
+	response.headers.set('X-Content-Type-Options', 'nosniff');
+	response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+	response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+	return response;
 };
