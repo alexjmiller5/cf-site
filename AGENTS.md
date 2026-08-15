@@ -61,20 +61,62 @@ options live in `vite.config.ts` inside the `sveltekit()` plugin.
   dependency for that) — same 24px/2px visual language, so the UI still reads
   as one icon set. Full standard in the global `icons` skill.
 
+## Site basics (SEO, titles, favicon, https)
+
+- **Every route sets `<title>` + `<meta name="description">`** in
+  `<svelte:head>` (pattern in `src/routes/+page.svelte`). Titles live on
+  pages, not the layout - a layout title duplicates when a page adds its own.
+- **Favicon: purpose-driven, never empty, never stock.** Replace
+  `src/lib/assets/favicon.svg` (keep SVG; it's wired in `+layout.svelte`)
+  with an icon that depicts THIS site specifically - its subject + function
+  together, e.g. a ticket tracker for the ACL festival gets the ACL logo
+  merged with a ticket glyph, not a bare ticket. The global `icons` skill is
+  raw material (glyphs to compose, recolor, overlay into one SVG), never the
+  finished favicon on its own. Shipping the template default or a blank
+  favicon to prod is a bug - the browser tab is the site's smallest logo,
+  treat it like one.
+- **`static/robots.txt`** ships allow-all; **`static/llms.txt`** describes
+  the site for LLM crawlers - fill its CHANGEMEs alongside the titles.
+- **http → https** is a 301 in `src/hooks.server.ts` (skipped in dev) - works
+  on any domain with zero zone config. Zone-level HSTS, if a site wants it,
+  follows the `scripts/cf-*.py` convention above.
+
+## Form abuse ladder
+
+Public forms get defenses in this order, stopping at the first level that
+holds (pattern proven on WTW - its historical bot spam died at level 3):
+
+1. **Honeypot field** - off-screen input; bots fill it, handler fakes success.
+2. **Per-IP rate limit** - Workers rate-limiting binding in `wrangler.jsonc`;
+   caps email-relay/D1 abuse. Free, no zone config.
+3. **Semantic validation** - server-side checks only a human passes (known
+   event names, ASCII folding, field plausibility).
+4. **Cloudflare Turnstile (managed mode)** - not baked into this template.
+   When scaffolding a site with a public form, OFFER it to Alex and lay out
+   the tradeoffs for THIS site: what the form triggers (email relay, D1
+   writes, paid APIs, reputational spam) and how costly/abusable that is,
+   versus what Turnstile costs here - a per-hostname widget registration
+   (account-level, not wrangler - needs a `scripts/cf-turnstile.py`
+   provisioner), a secret per site, a third-party script, and a nonzero
+   real-human block rate. Lean toward levels 1-3 alone for low-stakes forms;
+   lean toward adding Turnstile when side effects are expensive or abuse is
+   expected. Dev/test uses Cloudflare's dummy keys, so no widget needed
+   locally.
+
 ## Commands
 
 Standard verb set (see global AGENTS.md) — the justfile is the interface,
 not a script catalog; one-offs go in `scripts/` and run directly.
 
-| Command | Purpose |
-|---|---|
-| `just dev` | Dev server (secrets injected via op) |
-| `just test` | vitest |
-| `just check` / `just fmt` | wrangler types + svelte-check + prettier / auto-fix |
-| `just build` | Production build |
-| `just logs` | `wrangler tail` on the deployed Worker |
-| `just sync-secrets` | Push `.env.tpl` → Worker secrets |
-| `just deploy` | test + build + `wrangler deploy` — CI's job, not yours (below) |
+| Command                   | Purpose                                                        |
+| ------------------------- | -------------------------------------------------------------- |
+| `just dev`                | Dev server (secrets injected via op)                           |
+| `just test`               | vitest                                                         |
+| `just check` / `just fmt` | wrangler types + svelte-check + prettier / auto-fix            |
+| `just build`              | Production build                                               |
+| `just logs`               | `wrangler tail` on the deployed Worker                         |
+| `just sync-secrets`       | Push `.env.tpl` → Worker secrets                               |
+| `just deploy`             | test + build + `wrangler deploy` — CI's job, not yours (below) |
 
 **Deploying = commit + push to `main`.** The GHA deploy workflow runs tests,
 syncs secrets, and deploys — never run `just deploy` locally unless there's a
@@ -94,10 +136,13 @@ tests exist.
 1. Rename `name` in `wrangler.jsonc` and `package.json`.
 2. Fill `@theme` tokens in `src/routes/layout.css`; adjust the shadcn-svelte
    `:root`/`.dark` variables there if the project needs its own palette.
-3. Fill `.env.tpl` if the site needs secrets; `just sync-secrets`.
-4. Custom domain / D1 / R2: add to `wrangler.jsonc`, then `bun run gen`.
-5. Vault + CI: Alex runs `op-project-bootstrap .env.tpl --repo <owner/name>` — creates the project vault, the `<Project> ENV` item, the read-only CI SA, and sets the repo's `OP_SERVICE_ACCOUNT_TOKEN`.
-6. If private: enable Cloudflare Access on the domain (document the click-ops in README).
+3. Site basics: page `<title>`/description CHANGEMEs, `static/llms.txt`,
+   and a purpose-driven favicon (see "Site basics" above - compose one for
+   this site; never ship the template default).
+4. Fill `.env.tpl` if the site needs secrets; `just sync-secrets`.
+5. Custom domain / D1 / R2: add to `wrangler.jsonc`, then `bun run gen`.
+6. Vault + CI: Alex runs `op-project-bootstrap .env.tpl --repo <owner/name>` — creates the project vault, the `<Project> ENV` item, the read-only CI SA, and sets the repo's `OP_SERVICE_ACCOUNT_TOKEN`.
+7. If private: enable Cloudflare Access on the domain (document the click-ops in README).
 
 ## Hardcoded owner assumptions
 
