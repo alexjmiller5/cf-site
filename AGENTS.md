@@ -97,9 +97,10 @@ options live in `vite.config.ts` inside the `sveltekit()` plugin.
 - **Sitemap**: content sites fill the routes list in
   `src/routes/sitemap.xml/+server.ts` and uncomment the Sitemap line in
   robots.txt; dashboards/personal tools delete that route dir instead.
-- **Analytics: never baked in.** It's a per-site choice (CF Web Analytics,
-  PostHog, none) - offer options with tradeoffs when a site actually wants
-  measurement; don't preinstall any vendor's script.
+- **Analytics: work in progress.** A standard analytics service will
+  eventually be baked into this template; until it's chosen, don't
+  preinstall any vendor's script - if a site needs measurement now, ask
+  Alex which service to use for that site.
 
 ## Form abuse ladder
 
