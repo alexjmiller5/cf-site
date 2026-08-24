@@ -11,7 +11,7 @@ template for every site, dashboard, and site-attached backend.
   compiles into the one Worker. Do not create a separate backend for form
   handling, D1 reads, or thin API glue.
 - Heavier Python work (AI pipelines, scraping, long jobs) does NOT belong
-  here — that's Modal or the mac mini (see the `personal-infra` skill).
+  here — that's Modal or the mac mini (see the `infra` skill).
 - Bindings (D1, R2, KV, cron triggers) are declared in `wrangler.jsonc` —
   that file IS the IaC. Access them via `platform.env` (typed in
   `worker-configuration.d.ts`; regenerate with `bun run gen`).
@@ -22,18 +22,49 @@ template for every site, dashboard, and site-attached backend.
   plus a `just cf-*` recipe. The script IS the declarative source of truth —
   the intended settings read straight off it. Terraform is overkill for
   Cloudflare and drags back state files. Don't scaffold this until a site
-  actually needs it. (See the `personal-infra` skill.)
+  actually needs it. (See the `infra` skill.)
 - Scheduled work attached to this site → [`triggers.crons`](https://developers.cloudflare.com/workers/configuration/cron-triggers/)
   in wrangler.jsonc (free) — though Modal cron is the house default for
   standalone jobs.
-- Private site? Put Cloudflare Access in front (login via the Cloudflare
-  identity provider — sign in with the Cloudflare account, the zero-setup
-  default IdP; session duration 1 month; Service Tokens for machine
-  callers). Never roll custom auth for personal-only apps.
-  - If it's also a homescreen PWA: manifest + apple-touch-icon are fetched
-    WITHOUT cookies — see the personal-infra skill's PWA-behind-Access
-    pattern (manifest `crossorigin="use-credentials"` + a Bypass Access app
-    for the asset paths), or the icon degrades to a letter monogram.
+- **Who is this site for? That picks the auth, and it is not a close call:**
+  - **Just Alex, or a handful of named people** (internal dashboards, admin
+    panels, personal tools) → **Cloudflare Access**. It runs at the edge
+    BEFORE the Worker, so unauthorized requests never execute or bill, and
+    the app itself stays auth-free - no login UI, no session table, no user
+    model. Free ≤50 users.
+  - **Real end users signing themselves up** → **Better Auth** in the Worker
+    (D1 as the auth DB). Only when accounts are a product feature.
+  - Never roll custom auth, and never reach for Better Auth to gate a
+    personal-only app - a user table for an audience of one is the
+    definition of overkill.
+  - **Tailnet-only access is not achievable at Cloudflare** - tailnet IPs
+    never reach CF's edge and cellular is CGNAT, so there is nothing to
+    allowlist. Don't try. Access with a 1-month session is the closest thing
+    to "just let me in": you log in once, then it's invisible for a month.
+    (A dashboard that genuinely only ever needs to be reachable from the
+    tailnet doesn't belong on CF at all - that's `tailscale serve` on the
+    mac mini.)
+- Provision Access with **`scripts/cf-access.py`** (idempotent, same
+  declarative-via-script rule as above - never the dashboard):
+
+  ```bash
+  scripts/cf-access.py --name <site> --domain <site>.example.com --email you@example.com
+  ```
+
+  Repeat `--email` per person, `--domain` per hostname (add
+  `'*-<site>.<subdomain>.workers.dev'` to cover Workers preview URLs too).
+  `--dry-run` prints the plan without touching anything. Re-running
+  converges - it is the source of truth for who can reach the site.
+  - Machine callers (CI smoke tests, cron pokes) use Access **Service
+    Tokens** (`CF-Access-Client-Id`/`CF-Access-Client-Secret` headers), not
+    a human policy.
+  - If it's also a homescreen PWA: the manifest and apple-touch-icon are
+    fetched WITHOUT cookies, so Access blocks them and the iOS icon degrades
+    to a letter monogram. Pass **`--pwa`** - it adds a second Bypass app
+    covering exactly those asset paths (non-sensitive; everything else stays
+    protected). Then set `crossorigin="use-credentials"` on the manifest
+    `<link>`, and delete + re-add the homescreen app, since iOS snapshots
+    the icon at add-time.
 
 ## Stack
 
@@ -174,7 +205,9 @@ tests exist.
 6. Fill `.env.tpl` if the site needs secrets; `just sync-secrets`.
 7. Custom domain / D1 / R2: add to `wrangler.jsonc`, then `bun run gen`.
 8. Vault + CI: Alex runs `op-project-bootstrap .env.tpl --repo <owner/name>` — creates the project vault, the `<Project> ENV` item, the read-only CI SA, and sets the repo's `OP_SERVICE_ACCOUNT_TOKEN`.
-9. If private: enable Cloudflare Access on the domain (document the click-ops in README).
+9. If private: `scripts/cf-access.py --name <site> --domain <host> --email <you>`
+   (add `--pwa` if it's a homescreen app). Public site → delete
+   `scripts/cf-access.py`.
 
 ## Hardcoded owner assumptions
 
