@@ -207,12 +207,20 @@ tests exist.
    keep + wire the shipped turnstile files if adopted, delete them if not.
 5. Sitemap: content site → fill routes + uncomment robots.txt line;
    dashboard → delete `src/routes/sitemap.xml/`.
-6. Fill `.env.tpl` if the site needs secrets; `just sync-secrets`.
-7. Custom domain / D1 / R2: add to `wrangler.jsonc`, then `bun run gen`;
+6. Fill `.env.tpl` if the site needs secrets; `just sync-secrets`. A site with
+   no runtime secrets keeps the tpl empty - CI deploy creds live only in
+   `deploy.yml`.
+7. `scripts/provision.py`: set `NAME` to the project slug and adjust the
+   deploy-token permission groups to what this site deploys (R2/D1/KV).
+   Machine-mintable secrets never prompt - `op-project-bootstrap` calls it
+   for the Deploy Creds token + account id; add minters for any other
+   API-creatable credential (Resend, Turnstile, random tokens - shapes in
+   acl-price-watch).
+8. Custom domain / D1 / R2: add to `wrangler.jsonc`, then `bun run gen`;
    R2 buckets: `scripts/cf-r2.py` creates the declared ones. No R2 → delete
    that script.
-8. Vault + CI: Alex runs `op-project-bootstrap .env.tpl --repo <owner/name>` — creates the project vault, the `<Project> ENV` item, the read-only CI SA, and sets the repo's `OP_SERVICE_ACCOUNT_TOKEN`.
-9. If private: `scripts/cf-access.py --name <site> --domain <host> --email <you>`
+9. Vault + CI: Alex runs `op-project-bootstrap .env.tpl --repo <owner/name>` — creates the project vault, the `<Project> ENV` item, the read-only CI SA, and sets the repo's `OP_SERVICE_ACCOUNT_TOKEN`.
+10. If private: `scripts/cf-access.py --name <site> --domain <host> --email <you>`
    (add `--pwa` if it's a homescreen app). Public site → delete
    `scripts/cf-access.py`.
 
