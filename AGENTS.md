@@ -15,6 +15,11 @@ template for every site, dashboard, and site-attached backend.
 - Bindings (D1, R2, KV, cron triggers) are declared in `wrangler.jsonc` —
   that file IS the IaC. Access them via `platform.env` (typed in
   `worker-configuration.d.ts`; regenerate with `bun run gen`).
+  - Resources wrangler references but doesn't create are provisioned by
+    idempotent ensure-scripts that read the declaration straight from
+    `wrangler.jsonc`: **`scripts/cf-r2.py`** creates any missing bucket named
+    in `r2_buckets` (`--dry-run` / `--parse-only`; never deletes). Local dev
+    needs no provisioning — miniflare fakes bindings in `.wrangler/state/`.
 - **Zone/edge config that wrangler DOESN'T manage — HSTS, WAF/rate-limit
   rules, DNS records, Access policies — is declarative-via-SCRIPTS, never
   Terraform.** When a site needs one, add an idempotent `scripts/cf-*.py`
@@ -203,7 +208,9 @@ tests exist.
 5. Sitemap: content site → fill routes + uncomment robots.txt line;
    dashboard → delete `src/routes/sitemap.xml/`.
 6. Fill `.env.tpl` if the site needs secrets; `just sync-secrets`.
-7. Custom domain / D1 / R2: add to `wrangler.jsonc`, then `bun run gen`.
+7. Custom domain / D1 / R2: add to `wrangler.jsonc`, then `bun run gen`;
+   R2 buckets: `scripts/cf-r2.py` creates the declared ones. No R2 → delete
+   that script.
 8. Vault + CI: Alex runs `op-project-bootstrap .env.tpl --repo <owner/name>` — creates the project vault, the `<Project> ENV` item, the read-only CI SA, and sets the repo's `OP_SERVICE_ACCOUNT_TOKEN`.
 9. If private: `scripts/cf-access.py --name <site> --domain <host> --email <you>`
    (add `--pwa` if it's a homescreen app). Public site → delete
