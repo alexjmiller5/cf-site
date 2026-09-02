@@ -133,16 +133,23 @@ options live in `vite.config.ts` inside the `sveltekit()` plugin.
 - **Sitemap**: content sites fill the routes list in
   `src/routes/sitemap.xml/+server.ts` and uncomment the Sitemap line in
   robots.txt; dashboards/personal tools delete that route dir instead.
-- **Analytics: PostHog** (the house standard - one shared PostHog Cloud
-  project across ALL of Alex's apps, web + iOS, segmented by the `app`
-  super property). Wired in `src/lib/analytics.ts` + `+layout.svelte`:
-  no-ops until `PUBLIC_POSTHOG_KEY` (a publishable key, not a secret) is
-  filled in `wrangler.jsonc` `vars` from the shared 1P item at scaffold
-  time. Autocapture is OFF deliberately - capture explicit named events via
-  `import { posthog } from '$lib/analytics'` so event volume stays inside
-  the free tier and the privacy surface stays narrow; don't re-enable it.
-  Pageviews (incl. SPA navs) are tracked automatically. Dev runs are
-  keyless by design - don't wire the key into `.env.tpl`.
+- **Analytics: PostHog, OPT-IN per project** (house standard when wanted -
+  one shared PostHog Cloud project across ALL of Alex's apps, web + iOS,
+  segmented by the `app` super property). The wiring ships in
+  `src/lib/analytics.ts` + `+layout.svelte`; at scaffold time ASK Alex
+  whether this site gets analytics (same ritual as Turnstile):
+  - **Internal/personal sites (anything behind CF Access) default to NO** -
+    an audience of one produces no data worth reading. Declined → delete
+    `src/lib/analytics.ts`, its import + `onMount` in `+layout.svelte`, the
+    `PUBLIC_POSTHOG_KEY` var in `wrangler.jsonc`, and
+    `bun remove posthog-js`.
+  - Adopted → fill `PUBLIC_POSTHOG_KEY` (publishable, not a secret) in
+    `wrangler.jsonc` `vars` from the shared 1P item. Autocapture is OFF
+    deliberately - capture explicit named events via
+    `import { posthog } from '$lib/analytics'` so event volume stays inside
+    the free tier and the privacy surface stays narrow; don't re-enable it.
+    Pageviews (incl. SPA navs) are tracked automatically. Dev runs are
+    keyless by design - don't wire the key into `.env.tpl`.
 
 ## Form abuse ladder
 
@@ -216,7 +223,9 @@ tests exist.
 6. Fill `.env.tpl` if the site needs secrets; `just sync-secrets`. A site with
    no runtime secrets keeps the tpl empty - CI deploy creds live only in
    `deploy.yml`.
-   Analytics: fill `PUBLIC_POSTHOG_KEY` in `wrangler.jsonc` from the shared
+   Analytics: ASK Alex whether this site gets analytics (internal/CF-Access
+   sites default no → delete the wiring per the Analytics bullet above).
+   Adopted → fill `PUBLIC_POSTHOG_KEY` in `wrangler.jsonc` from the shared
    1P item ("PostHog Project API Key", AI Agent vault) - publishable key,
    goes straight in the committed config, not the tpl.
 7. `scripts/provision.py`: set `NAME` to the project slug and adjust the
