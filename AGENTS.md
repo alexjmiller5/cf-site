@@ -134,20 +134,33 @@ options live in `vite.config.ts` inside the `sveltekit()` plugin.
   `src/routes/sitemap.xml/+server.ts` and uncomment the Sitemap line in
   robots.txt; dashboards/personal tools delete that route dir instead.
 - **Analytics: PostHog, OPT-IN per project** (house standard when wanted -
-  one shared PostHog Cloud project across ALL of Alex's apps, web + iOS,
-  segmented by the `app` super property). The wiring ships in
-  `src/lib/analytics.ts` + `+layout.svelte`; at scaffold time ASK Alex
+  every adopting app gets its OWN PostHog Cloud project). The wiring ships
+  in `src/lib/analytics.ts` + `+layout.svelte`; at scaffold time ASK Alex
   whether this site gets analytics (same ritual as Turnstile):
   - **Internal/personal sites (anything behind CF Access) default to NO** -
     an audience of one produces no data worth reading. Declined → delete
     `src/lib/analytics.ts`, its import + `onMount` in `+layout.svelte`, the
     `PUBLIC_POSTHOG_KEY` var in `wrangler.jsonc`, and
     `bun remove posthog-js`.
-  - Adopted → fill `PUBLIC_POSTHOG_KEY` (publishable, not a secret) in
-    `wrangler.jsonc` `vars` from the shared 1P item. Autocapture is OFF
+  - Adopted → the agent CREATES a PostHog project for this app and fills
+    its publishable `phc_` token into `PUBLIC_POSTHOG_KEY` in
+    `wrangler.jsonc` `vars` (committed config, not the tpl - it is not a
+    secret). Management key = "AI Agent PostHog Personal API Key"
+    (`op://4eeyrkqibibn7k4j6rz2fbzvxm/mmwl3dsd7kbsfc62osuj43ovvm/credential`),
+    org `01a06053-2eab-0000-6350-0004810c636e`, US Cloud:
+    ```bash
+    KEY=$(op read "op://4eeyrkqibibn7k4j6rz2fbzvxm/mmwl3dsd7kbsfc62osuj43ovvm/credential")
+    curl -s -X POST -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
+      -d '{"name":"<project-slug>"}' \
+      "https://us.posthog.com/api/organizations/01a06053-2eab-0000-6350-0004810c636e/projects/" \
+      | jq -r .api_token   # → PUBLIC_POSTHOG_KEY
+    ```
+    Free tier allows ONE project (the org's existing project - rename and
+    reuse it for the first adopter instead of creating); more projects need
+    Alex to add a card first - ask him, and remind him to SET BILLING
+    LIMITS then (they default OFF once a card exists). Autocapture is OFF
     deliberately - capture explicit named events via
-    `import { posthog } from '$lib/analytics'` so event volume stays inside
-    the free tier and the privacy surface stays narrow; don't re-enable it.
+    `import { posthog } from '$lib/analytics'`; don't re-enable it.
     Pageviews (incl. SPA navs) are tracked automatically. Dev runs are
     keyless by design - don't wire the key into `.env.tpl`.
 
@@ -225,9 +238,9 @@ tests exist.
    `deploy.yml`.
    Analytics: ASK Alex whether this site gets analytics (internal/CF-Access
    sites default no → delete the wiring per the Analytics bullet above).
-   Adopted → fill `PUBLIC_POSTHOG_KEY` in `wrangler.jsonc` from the shared 1P item
-   `op://4eeyrkqibibn7k4j6rz2fbzvxm/2o56i67jtrxwegu5oqof2ndppy/credential` ("PostHog Project API Key", AI Agent vault) - publishable key,
-   goes straight in the committed config, not the tpl.
+   Adopted → create this app's own PostHog project and fill
+   `PUBLIC_POSTHOG_KEY` in `wrangler.jsonc` (API call in the Analytics
+   bullet above).
 7. `scripts/provision.py`: set `NAME` to the project slug and adjust the
    deploy-token permission groups to what this site deploys (R2/D1/KV).
    Machine-mintable secrets never prompt - `op-project-bootstrap` calls it
