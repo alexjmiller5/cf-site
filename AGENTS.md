@@ -244,7 +244,7 @@ tests exist.
 7. `scripts/provision.py`: set `NAME` to the project slug and adjust the
    deploy-token permission groups to what this site deploys (R2/D1/KV).
    Machine-mintable secrets never prompt - `op-project-bootstrap` calls it
-   for the Deploy Creds token + account id; add minters for any other
+   for the CI Cloudflare Token item (api-token + account-id); add minters for any other
    API-creatable credential (Resend, Turnstile, random tokens - shapes in
    acl-price-watch).
 8. Custom domain / D1 / R2: add to `wrangler.jsonc`, then `bun run gen`;
