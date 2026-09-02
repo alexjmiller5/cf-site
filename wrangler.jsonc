@@ -9,5 +9,11 @@
 		"directory": ".svelte-kit/cloudflare"
 	},
 	"workers_dev": true,
-	"preview_urls": true
+	"preview_urls": true,
+	"vars": {
+		// PostHog project API key (publishable, not a secret - ships in the client
+		// bundle by design). Fill from the shared 1P item at scaffold time; empty
+		// = analytics disabled. Dev stays keyless so local runs don't pollute data.
+		"PUBLIC_POSTHOG_KEY": ""
+	}
 }

@@ -133,10 +133,16 @@ options live in `vite.config.ts` inside the `sveltekit()` plugin.
 - **Sitemap**: content sites fill the routes list in
   `src/routes/sitemap.xml/+server.ts` and uncomment the Sitemap line in
   robots.txt; dashboards/personal tools delete that route dir instead.
-- **Analytics: work in progress.** A standard analytics service will
-  eventually be baked into this template; until it's chosen, don't
-  preinstall any vendor's script - if a site needs measurement now, ask
-  Alex which service to use for that site.
+- **Analytics: PostHog** (the house standard - one shared PostHog Cloud
+  project across ALL of Alex's apps, web + iOS, segmented by the `app`
+  super property). Wired in `src/lib/analytics.ts` + `+layout.svelte`:
+  no-ops until `PUBLIC_POSTHOG_KEY` (a publishable key, not a secret) is
+  filled in `wrangler.jsonc` `vars` from the shared 1P item at scaffold
+  time. Autocapture is OFF deliberately - capture explicit named events via
+  `import { posthog } from '$lib/analytics'` so event volume stays inside
+  the free tier and the privacy surface stays narrow; don't re-enable it.
+  Pageviews (incl. SPA navs) are tracked automatically. Dev runs are
+  keyless by design - don't wire the key into `.env.tpl`.
 
 ## Form abuse ladder
 
@@ -210,6 +216,9 @@ tests exist.
 6. Fill `.env.tpl` if the site needs secrets; `just sync-secrets`. A site with
    no runtime secrets keeps the tpl empty - CI deploy creds live only in
    `deploy.yml`.
+   Analytics: fill `PUBLIC_POSTHOG_KEY` in `wrangler.jsonc` from the shared
+   1P item ("PostHog Project API Key", AI Agent vault) - publishable key,
+   goes straight in the committed config, not the tpl.
 7. `scripts/provision.py`: set `NAME` to the project slug and adjust the
    deploy-token permission groups to what this site deploys (R2/D1/KV).
    Machine-mintable secrets never prompt - `op-project-bootstrap` calls it
@@ -221,8 +230,8 @@ tests exist.
    that script.
 9. Vault + CI: Alex runs `op-project-bootstrap .env.tpl --repo <owner/name>` — creates the project vault, the `<Project> ENV` item, the read-only CI SA, and sets the repo's `OP_SERVICE_ACCOUNT_TOKEN`.
 10. If private: `scripts/cf-access.py --name <site> --domain <host> --email <you>`
-   (add `--pwa` if it's a homescreen app). Public site → delete
-   `scripts/cf-access.py`.
+    (add `--pwa` if it's a homescreen app). Public site → delete
+    `scripts/cf-access.py`.
 
 ## Hardcoded owner assumptions
 
