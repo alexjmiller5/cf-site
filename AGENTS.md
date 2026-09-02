@@ -225,8 +225,8 @@ tests exist.
    `deploy.yml`.
    Analytics: ASK Alex whether this site gets analytics (internal/CF-Access
    sites default no → delete the wiring per the Analytics bullet above).
-   Adopted → fill `PUBLIC_POSTHOG_KEY` in `wrangler.jsonc` from the shared
-   1P item ("PostHog Project API Key", AI Agent vault) - publishable key,
+   Adopted → fill `PUBLIC_POSTHOG_KEY` in `wrangler.jsonc` from the shared 1P item
+   `op://4eeyrkqibibn7k4j6rz2fbzvxm/2o56i67jtrxwegu5oqof2ndppy/credential` ("PostHog Project API Key", AI Agent vault) - publishable key,
    goes straight in the committed config, not the tpl.
 7. `scripts/provision.py`: set `NAME` to the project slug and adjust the
    deploy-token permission groups to what this site deploys (R2/D1/KV).
