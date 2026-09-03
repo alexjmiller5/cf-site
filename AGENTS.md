@@ -161,8 +161,11 @@ options live in `vite.config.ts` inside the `sveltekit()` plugin.
     LIMITS then (they default OFF once a card exists). Autocapture is OFF
     deliberately - capture explicit named events via
     `import { posthog } from '$lib/analytics'`; don't re-enable it.
-    Pageviews (incl. SPA navs) are tracked automatically. Dev runs are
-    keyless by design - don't wire the key into `.env.tpl`.
+    Pageviews (incl. SPA navs) are tracked automatically. Session replay,
+    dead-click capture and pageview capture are pinned explicitly in
+    `analytics.ts` because the `defaults` preset gets them wrong (replay on,
+    pageviews missing) - keep those three lines when bumping the preset. Dev
+    runs are keyless by design - don't wire the key into `.env.tpl`.
 
 ## Form abuse ladder
 
