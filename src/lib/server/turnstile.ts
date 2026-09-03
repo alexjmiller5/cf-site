@@ -4,7 +4,7 @@
 //
 //   const ok = await verifyTurnstile(
 //     form.get('cf-turnstile-response'),
-//     platform!.env.TURNSTILE_SECRET_KEY,
+//     requireSecret('TURNSTILE_SECRET_KEY'),   // $lib/server/env - never platform.env
 //     request.headers.get('cf-connecting-ip')
 //   );
 //   if (!ok) return fail(403, { error: 'Verification failed - please retry.' });

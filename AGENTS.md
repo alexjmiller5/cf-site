@@ -10,6 +10,13 @@ template for every site, dashboard, and site-attached backend.
   server routes (`+page.server.ts`, `src/routes/api/*/+server.ts`) — it all
   compiles into the one Worker. Do not create a separate backend for form
   handling, D1 reads, or thin API glue.
+- **Secrets are read via `requireSecret()` in `src/lib/server/env.ts`**
+  (`$env/dynamic/private`), never `platform.env`. `platform.env` in dev only
+  sees `.dev.vars` and wrangler `vars` - not the process env - so code that
+  reads secrets off it gets `undefined` under `just dev`'s `op run`. The
+  `$env/dynamic/private` seam is what makes one code path work for both
+  `op run` locally and the Worker's secret bindings in production. Bindings
+  (D1, R2, KV) stay on `platform.env`.
 - Heavier Python work (AI pipelines, scraping, long jobs) does NOT belong
   here — that's Modal or the mac mini (see the `infra` skill).
 - Bindings (D1, R2, KV, cron triggers) are declared in `wrangler.jsonc` —
