@@ -167,7 +167,9 @@ def main() -> None:
             apps,
             desired_app(
                 f"{args.name} - public assets",
-                [d + p for d in args.domains for p in PWA_PUBLIC_PATHS],
+                # Primary domain only: preview URLs are never installed as PWAs,
+                # and Access caps destinations per app (all domains x paths 400s).
+                [args.domains[0] + p for p in PWA_PUBLIC_PATHS],
                 args.session,
                 idp,
                 {
