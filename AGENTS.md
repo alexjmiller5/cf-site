@@ -25,8 +25,13 @@ template for every site, dashboard, and site-attached backend.
   - Resources wrangler references but doesn't create are provisioned by
     idempotent ensure-scripts that read the declaration straight from
     `wrangler.jsonc`: **`scripts/cf-r2.py`** creates any missing bucket named
-    in `r2_buckets` (`--dry-run` / `--parse-only`; never deletes). Local dev
-    needs no provisioning — miniflare fakes bindings in `.wrangler/state/`.
+    in `r2_buckets`, **`scripts/cf-d1.py`** any missing database in
+    `d1_databases` (then tells you the `database_id` to paste; schema lives
+    in `migrations/*.sql`, applied by CI with
+    `wrangler d1 migrations apply <name> --remote` before the deploy step).
+    Both take `--dry-run` / `--parse-only` and never delete. Delete the
+    script for a resource kind the site doesn't use. Local dev needs no
+    provisioning — miniflare fakes bindings in `.wrangler/state/`.
 - **Zone/edge config that wrangler DOESN'T manage — HSTS, WAF/rate-limit
   rules, DNS records, Access policies — is declarative-via-SCRIPTS, never
   Terraform.** When a site needs one, add an idempotent `scripts/cf-*.py`
@@ -70,13 +75,24 @@ template for every site, dashboard, and site-attached backend.
   - Machine callers (CI smoke tests, cron pokes) use Access **Service
     Tokens** (`CF-Access-Client-Id`/`CF-Access-Client-Secret` headers), not
     a human policy.
-  - If it's also a homescreen PWA: the manifest and apple-touch-icon are
-    fetched WITHOUT cookies, so Access blocks them and the iOS icon degrades
-    to a letter monogram. Pass **`--pwa`** - it adds a second Bypass app
-    covering exactly those asset paths (non-sensitive; everything else stays
-    protected). Then set `crossorigin="use-credentials"` on the manifest
-    `<link>`, and delete + re-add the homescreen app, since iOS snapshots
-    the icon at add-time.
+  - **Every private site is also a homescreen app** (the template ships the
+    manifest, icons, and iOS metas - see Site basics), and its manifest and
+    apple-touch-icon are fetched WITHOUT cookies, so Access blocks them and
+    the iOS icon degrades to a letter monogram. Always pass **`--pwa`** for a
+    private site - it adds a second Bypass app covering exactly those asset
+    paths (non-sensitive; everything else stays protected). `app.html`
+    already carries `crossorigin="use-credentials"` on the manifest `<link>`;
+    after a change, delete + re-add the homescreen app (iOS snapshots the
+    icon at add-time). `--public-path /api/foo` (repeatable) adds more
+    cookie-less paths to that bypass app - a machine-polled status flag, a
+    webhook.
+  - A machine caller that needs THROUGH Access (a job pushing data, a poller
+    that must read protected routes) gets an Access **service token**, not
+    an app-level secret: `--service-token "<site> - <caller>"` creates it
+    once (client id + secret printed ONCE - store them in the caller's own
+    1Password vault, e.g. the machine vault) and attaches it as a
+    `non_identity` policy. The caller sends `CF-Access-Client-Id` /
+    `CF-Access-Client-Secret` headers; the app still has zero auth code.
 
 ## Stack
 
@@ -123,9 +139,20 @@ options live in `vite.config.ts` inside the `sveltekit()` plugin.
   treat it like one.
 - **`static/robots.txt`** ships allow-all; **`static/llms.txt`** describes
   the site for LLM crawlers - fill its CHANGEMEs alongside the titles.
-- **apple-touch-icon**: `static/apple-touch-icon.png` (180x180) - the same
-  purpose-driven icon rendered to PNG; iOS homescreen/share-sheet uses it.
-  Shipping the placeholder to prod is a bug, same as the favicon.
+- **Homescreen install is baked in**: `static/manifest.webmanifest`
+  (fill name/short_name, colors match the background tokens),
+  `static/icon-192.png` + `icon-512.png` + `apple-touch-icon.png` (180), and
+  the iOS metas in `app.html` (`apple-mobile-web-app-title` CHANGEME). After
+  the favicon is final, `scripts/generate-icons.sh [bg]` renders all three
+  PNGs from it (macOS Quick Look, zero deps) - give the favicon's strokes/
+  fills explicit attributes, a rasterizer ignores its `<style>` rules.
+  Shipping the placeholders to prod is a bug, same as the favicon. Private
+  site → `cf-access.py --pwa` so iOS can fetch the icon (above).
+- **Mobile is a first-class viewport**: every page must work at 390px wide -
+  no horizontal scroll, tap targets ≥ 40px, `flex-wrap` control rows, tables
+  and wide content scroll inside their own container. Check with a
+  390-wide screenshot before calling a page done (dashboards: the
+  `dashboards` skill's mobile rules).
 - **theme-color** metas in `src/app.html` (light + dark) - match them to the
   site's background tokens in `layout.css`. Dark-mode-aware favicon: embed a
   `prefers-color-scheme` `<style>` inside the favicon SVG when its colors
@@ -236,9 +263,11 @@ tests exist.
 2. Fill `@theme` tokens in `src/routes/layout.css`; adjust the shadcn-svelte
    `:root`/`.dark` variables there if the project needs its own palette.
 3. Site basics: `<Seo>` title/description CHANGEMEs, `static/llms.txt`,
-   theme-color metas in `app.html`, and purpose-driven icons - favicon.svg
-   AND apple-touch-icon.png (compose for this site; never ship the template
-   defaults). Restyle `+error.svelte` with the theme.
+   theme-color metas + `apple-mobile-web-app-title` in `app.html`,
+   `manifest.webmanifest` names/colors, and a purpose-driven favicon.svg
+   (compose for this site; never ship the template default) then
+   `scripts/generate-icons.sh` for the PNG set. Restyle `+error.svelte`
+   with the theme.
 4. Forms: run the abuse ladder; offer Turnstile with this site's tradeoffs -
    keep + wire the shipped turnstile files if adopted, delete them if not.
 5. Sitemap: content site → fill routes + uncomment robots.txt line;
@@ -261,9 +290,9 @@ tests exist.
    R2 buckets: `scripts/cf-r2.py` creates the declared ones. No R2 → delete
    that script.
 9. Vault + CI: Alex runs `op-project-bootstrap .env.tpl --repo <owner/name>` — creates the project vault, the `<Project> ENV` item, the read-only CI SA, and sets the repo's `OP_SERVICE_ACCOUNT_TOKEN`.
-10. If private: `scripts/cf-access.py --name <site> --domain <host> --email <you>`
-    (add `--pwa` if it's a homescreen app). Public site → delete
-    `scripts/cf-access.py`.
+10. If private: `scripts/cf-access.py --name <site> --domain <host> --email <you> --pwa`
+    (always `--pwa` - every site ships as a homescreen app). Public site →
+    delete `scripts/cf-access.py`.
 
 ## Hardcoded owner assumptions
 

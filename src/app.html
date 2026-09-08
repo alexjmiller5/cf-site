@@ -2,9 +2,17 @@
 <html lang="en">
 	<head>
 		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 		<meta name="text-scale" content="scale" />
+		<!-- Homescreen install (iOS + Android): manifest + icons + iOS metas. The
+		     manifest is fetched cookie-less, so behind Cloudflare Access it needs
+		     use-credentials AND the paths bypassed (scripts/cf-access.py --pwa). -->
+		<link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials" />
 		<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+		<!-- CHANGEME: the homescreen label (short) -->
+		<meta name="apple-mobile-web-app-title" content="CHANGEME" />
 		<!-- CHANGEME: match the site's light/dark background tokens (layout.css) -->
 		<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
 		<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0a0a0a" />
