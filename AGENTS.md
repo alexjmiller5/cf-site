@@ -94,6 +94,33 @@ template for every site, dashboard, and site-attached backend.
     `non_identity` policy. The caller sends `CF-Access-Client-Id` /
     `CF-Access-Client-Secret` headers; the app still has zero auth code.
 
+## Credentials and resource ownership
+
+- Each project owns its Worker, storage resources, project vault and CI
+  credential. Record owned resources and approved service APIs here during
+  setup. Access another app's data through its scoped service API, not that
+  app's backing database or bucket credentials.
+- `scripts/provision.py` defaults to Workers Scripts Write on exactly one
+  account. Set `CLOUDFLARE_ACCOUNT_ID` to choose it; automatic discovery only
+  succeeds when the provisioning identity sees one account. Cloudflare
+  enforces Workers Scripts Write at account scope, not per Worker.
+- `CF_PROVISION_TOKEN` optionally supplies the operator's minting credential;
+  otherwise the provisioner reads the operator's configured 1Password item.
+  The operator credential stays outside the project's CI/runtime secrets.
+- Existing D1/R2 bindings do not inherently need direct storage permissions
+  on the deployment token. Add permissions only for operations the project
+  actually performs, such as D1 migrations. Restrict any necessary zone
+  permissions to the project's zone; Wrangler may need Workers Routes Read
+  to inspect routes during a Custom Domain deployment. Occasional DNS,
+  Access, storage creation and zone administration use separate operator
+  credentials kept outside the vault read by CI.
+- Provisioning always mints a distinct token and leaves existing tokens
+  active. Store the replacement, deploy with it, verify the required
+  operation and a harmless denied operation, then retire the predecessor
+  by provider ID. Never delete a working token to reuse its display name.
+- Credential checks use fake HTTP only:
+  `uv run --with httpx python scripts/test_provision.py`.
+
 ## Stack
 
 Bun (never npm) · SvelteKit + Svelte 5 runes · Tailwind v4 ·
@@ -280,8 +307,11 @@ tests exist.
    Adopted → create this app's own PostHog project and fill
    `PUBLIC_POSTHOG_KEY` in `wrangler.jsonc` (API call in the Analytics
    bullet above).
-7. `scripts/provision.py`: set `NAME` to the project slug and adjust the
-   deploy-token permission groups to what this site deploys (R2/D1/KV).
+7. `scripts/provision.py`: set `NAME` to the project slug and select the
+   deployment account with `CLOUDFLARE_ACCOUNT_ID` when it is ambiguous.
+   Keep the Workers Scripts Write default; add only permissions proven
+   necessary for this project's deployment steps, per the ownership rules
+   above. Record its resources and service dependencies in this file.
    Machine-mintable secrets never prompt - `op-project-bootstrap` calls it
    for the CI Cloudflare Token item (api-token + account-id); add minters for any other
    API-creatable credential (Resend, Turnstile, random tokens - shapes in
