@@ -181,9 +181,10 @@ options live in `vite.config.ts` inside the `sveltekit()` plugin.
   390-wide screenshot before calling a page done (dashboards: the
   `dashboards` skill's mobile rules).
 - **theme-color** metas in `src/app.html` (light + dark) - match them to the
-  site's background tokens in `layout.css`. Dark-mode-aware favicon: embed a
-  `prefers-color-scheme` `<style>` inside the favicon SVG when its colors
-  need to flip.
+  site's background tokens in `layout.css`. A favicon that needs its colors to flip
+  can embed a `prefers-color-scheme` `<style>`, but the icon rasterizer
+  renders the dark branch - prefer one unconditional palette that works on
+  both, or pass `generate-icons.sh` a background that suits the dark one.
 - **Error page**: `src/routes/+error.svelte` renders 404/500 with the site's
   theme tokens - restyle it with the site, don't delete it.
 - **http → https** is a 301 in `src/hooks.server.ts` (skipped in dev) - works
