@@ -329,9 +329,10 @@ tests exist.
    acl-price-watch).
 8. Custom domain / D1 / R2 / Queues: add to `wrangler.jsonc`, then
    `bun run gen`; R2 buckets: `scripts/cf-r2.py` creates the declared ones,
-   queues: `scripts/cf-queues.py`. No R2 / no queues → delete that script. If `www` is attached too: `scripts/cf-redirect.py --zone
-   <apex>` so it 301s to the apex (see the www → apex bullet). No `www` →
-   delete that script.
+   queues: `scripts/cf-queues.py`. No R2 / no queues → delete that script.
+   If `www` is attached too: `scripts/cf-redirect.py --zone <apex>` so it
+   301s to the apex (see the www → apex bullet). No `www` → delete that
+   script.
 9. Vault + CI: Alex runs `op-project-bootstrap .env.tpl --repo <owner/name>` — creates the project vault, the `<Project> ENV` item, the read-only CI SA, and sets the repo's `OP_SERVICE_ACCOUNT_TOKEN`.
 10. If private: `scripts/cf-access.py --name <site> --domain <host> --email <you> --pwa`
     (always `--pwa` - every site ships as a homescreen app). Public site →
