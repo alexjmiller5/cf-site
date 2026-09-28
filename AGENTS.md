@@ -192,6 +192,13 @@ options live in `vite.config.ts` inside the `sveltekit()` plugin.
   headers (nosniff, Referrer-Policy, Permissions-Policy); CSP stays
   per-site. Zone-level HSTS, if a site wants it, follows the
   `scripts/cf-*.py` convention above.
+- **www → apex** is NOT in the hook: it is a Cloudflare Single Redirect
+  installed by `scripts/cf-redirect.py --zone <apex>` (runs before the
+  Worker, so www never reaches app code). Run it whenever a site attaches a
+  `www` hostname. One public origin is load-bearing: anything built from
+  the request origin - an OAuth `redirect_uri`, the canonical tag, the
+  analytics cookie - forks silently when www is served as a second site,
+  and OAuth providers refuse the unregistered callback outright.
 - **Sitemap**: content sites fill the routes list in
   `src/routes/sitemap.xml/+server.ts` and uncomment the Sitemap line in
   robots.txt; dashboards/personal tools delete that route dir instead.
@@ -319,7 +326,9 @@ tests exist.
    acl-price-watch).
 8. Custom domain / D1 / R2: add to `wrangler.jsonc`, then `bun run gen`;
    R2 buckets: `scripts/cf-r2.py` creates the declared ones. No R2 → delete
-   that script.
+   that script. If `www` is attached too: `scripts/cf-redirect.py --zone
+   <apex>` so it 301s to the apex (see the www → apex bullet). No `www` →
+   delete that script.
 9. Vault + CI: Alex runs `op-project-bootstrap .env.tpl --repo <owner/name>` — creates the project vault, the `<Project> ENV` item, the read-only CI SA, and sets the repo's `OP_SERVICE_ACCOUNT_TOKEN`.
 10. If private: `scripts/cf-access.py --name <site> --domain <host> --email <you> --pwa`
     (always `--pwa` - every site ships as a homescreen app). Public site →
