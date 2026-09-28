@@ -28,8 +28,11 @@ template for every site, dashboard, and site-attached backend.
     in `r2_buckets`, **`scripts/cf-d1.py`** any missing database in
     `d1_databases` (then tells you the `database_id` to paste; schema lives
     in `migrations/*.sql`, applied by CI with
-    `wrangler d1 migrations apply <name> --remote` before the deploy step).
-    Both take `--dry-run` / `--parse-only` and never delete. Delete the
+    `wrangler d1 migrations apply <name> --remote` before the deploy step),
+    **`scripts/cf-queues.py`** any missing queue named under
+    `queues.producers` / `queues.consumers` / their `dead_letter_queue`s
+    (`wrangler deploy` does not create queues - it fails on a missing one).
+    All three take `--dry-run` / `--parse-only` and never delete. Delete the
     script for a resource kind the site doesn't use. Local dev needs no
     provisioning — miniflare fakes bindings in `.wrangler/state/`.
 - **Zone/edge config that wrangler DOESN'T manage — HSTS, WAF/rate-limit
@@ -324,9 +327,9 @@ tests exist.
    for the CI Cloudflare Token item (api-token + account-id); add minters for any other
    API-creatable credential (Resend, Turnstile, random tokens - shapes in
    acl-price-watch).
-8. Custom domain / D1 / R2: add to `wrangler.jsonc`, then `bun run gen`;
-   R2 buckets: `scripts/cf-r2.py` creates the declared ones. No R2 → delete
-   that script. If `www` is attached too: `scripts/cf-redirect.py --zone
+8. Custom domain / D1 / R2 / Queues: add to `wrangler.jsonc`, then
+   `bun run gen`; R2 buckets: `scripts/cf-r2.py` creates the declared ones,
+   queues: `scripts/cf-queues.py`. No R2 / no queues → delete that script. If `www` is attached too: `scripts/cf-redirect.py --zone
    <apex>` so it 301s to the apex (see the www → apex bullet). No `www` →
    delete that script.
 9. Vault + CI: Alex runs `op-project-bootstrap .env.tpl --repo <owner/name>` — creates the project vault, the `<Project> ENV` item, the read-only CI SA, and sets the repo's `OP_SERVICE_ACCOUNT_TOKEN`.
