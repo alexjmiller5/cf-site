@@ -17,6 +17,10 @@ template for every site, dashboard, and site-attached backend.
   `$env/dynamic/private` seam is what makes one code path work for both
   `op run` locally and the Worker's secret bindings in production. Bindings
   (D1, R2, KV) stay on `platform.env`.
+- **Calling another of the account's workers.dev Workers** (a scoped
+  service API such as Life Data) over `fetch()` fails with Cloudflare error
+  1042 unless `wrangler.jsonc` sets
+  `"compatibility_flags": ["global_fetch_strictly_public"]`.
 - Heavier Python work (AI pipelines, scraping, long jobs) does NOT belong
   here — that's Modal or the mac mini (see the `infra` skill).
 - Bindings (D1, R2, KV, cron triggers) are declared in `wrangler.jsonc` —
@@ -31,8 +35,10 @@ template for every site, dashboard, and site-attached backend.
     `wrangler d1 migrations apply <name> --remote` before the deploy step),
     **`scripts/cf-queues.py`** any missing queue named under
     `queues.producers` / `queues.consumers` / their `dead_letter_queue`s
-    (`wrangler deploy` does not create queues - it fails on a missing one).
-    All three take `--dry-run` / `--parse-only` and never delete. Delete the
+    (`wrangler deploy` does not create queues - it fails on a missing one),
+    **`scripts/cf-kv.py`** any missing KV namespace in `kv_namespaces`
+    (title `<worker name>-<binding lowercased>`; paste the id it reports).
+    All four take `--dry-run` / `--parse-only` and never delete. Delete the
     script for a resource kind the site doesn't use. Local dev needs no
     provisioning — miniflare fakes bindings in `.wrangler/state/`.
 - **Zone/edge config that wrangler DOESN'T manage — HSTS, WAF/rate-limit
@@ -329,7 +335,8 @@ tests exist.
    acl-price-watch).
 8. Custom domain / D1 / R2 / Queues: add to `wrangler.jsonc`, then
    `bun run gen`; R2 buckets: `scripts/cf-r2.py` creates the declared ones,
-   queues: `scripts/cf-queues.py`. No R2 / no queues → delete that script.
+   queues: `scripts/cf-queues.py`, KV: `scripts/cf-kv.py`. No R2 / no queues /
+   no KV → delete that script.
    If `www` is attached too: `scripts/cf-redirect.py --zone <apex>` so it
    301s to the apex (see the www → apex bullet). No `www` → delete that
    script.
