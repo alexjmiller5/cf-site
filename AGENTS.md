@@ -164,15 +164,10 @@ options live in `vite.config.ts` inside the `sveltekit()` plugin.
   not the layout - a layout title duplicates when a page adds its own. Give
   `image` a 1200x630 banner path once the site has one (link unfurls in
   iMessage/Slack/Discord depend on it).
-- **Favicon: purpose-driven, never empty, never stock.** Replace
-  `src/lib/assets/favicon.svg` (keep SVG; it's wired in `+layout.svelte`)
-  with an icon that depicts THIS site specifically - its subject + function
-  together, e.g. a ticket tracker for the ACL festival gets the ACL logo
-  merged with a ticket glyph, not a bare ticket. The global `icons` skill is
-  raw material (glyphs to compose, recolor, overlay into one SVG), never the
-  finished favicon on its own. Shipping the template default or a blank
-  favicon to prod is a bug - the browser tab is the site's smallest logo,
-  treat it like one.
+- **Favicon: required, designed per the `icons` skill** ("A project's own
+  icon": subject + function, composed from the sets, never stock). Replace
+  `src/lib/assets/favicon.svg` (keep SVG; it's wired in `+layout.svelte`).
+  Shipping the template default or a blank favicon to prod is a bug.
 - **`static/robots.txt`** ships allow-all; **`static/llms.txt`** describes
   the site for LLM crawlers - fill its CHANGEMEs alongside the titles.
 - **Homescreen install is baked in**: `static/manifest.webmanifest`
