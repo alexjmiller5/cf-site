@@ -191,6 +191,11 @@ options live in `vite.config.ts` inside the `sveltekit()` plugin.
   both, or pass `generate-icons.sh` a background that suits the dark one.
 - **Error page**: `src/routes/+error.svelte` renders 404/500 with the site's
   theme tokens - restyle it with the site, don't delete it.
+- **Version label**: `+layout.svelte` shows `v<version>` in small muted text
+  in the bottom-right corner, read from package.json via `src/lib/version.ts`
+  (the single version source, `semver` skill) - public version only, no build
+  hashes or environment details. Keep it when restyling; move it into a
+  settings page or footer if the site grows one.
 - **http → https** is a 301 in `src/hooks.server.ts` (skipped in dev) - works
   on any domain with zero zone config. The same hook sets baseline security
   headers (nosniff, Referrer-Policy, Permissions-Policy); CSP stays
