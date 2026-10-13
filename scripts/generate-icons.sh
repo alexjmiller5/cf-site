@@ -28,7 +28,9 @@ trap 'rm -rf "$tmp"' EXIT
 # the inner element scales to the box and centers itself.
 box=$(awk -v s="$SCALE" 'BEGIN{printf "%d", 512 * s}')
 off=$(awk -v b="$box" 'BEGIN{printf "%d", (512 - b) / 2}')
-inner="$(sed -e 's/<?xml[^>]*>//' "$FAVICON")"
+# Strip the root's fixed width/height so the nested <svg> scales to the box
+# (a fixed size would win and render the glyph at its native pixel size).
+inner="$(perl -0pe 's/<\?xml[^>]*>//; s/(<svg\b[^>]*?)\s(?:width|height)="[^"]*"/$1/; s/(<svg\b[^>]*?)\s(?:width|height)="[^"]*"/$1/' "$FAVICON")"
 cat > "$tmp/icon.svg" <<SVG
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
   <rect width="512" height="512" fill="$BG"/>
